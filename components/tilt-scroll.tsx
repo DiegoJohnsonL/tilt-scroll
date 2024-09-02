@@ -11,7 +11,7 @@ function useDeviceOrientation() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   useEffect(() => {
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      setBeta(event.beta || 0);
+      setBeta((event.beta || 0) / 5);
     };
 
     if (isMobile) {
