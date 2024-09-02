@@ -1,9 +1,30 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text, Box } from "@react-three/drei";
-import { useGesture } from "@use-gesture/react";
+import { useMediaQuery } from "usehooks-ts";
+
+// Custom hook for device orientation
+function useDeviceOrientation() {
+  const [beta, setBeta] = useState(0);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  useEffect(() => {
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      setBeta(event.beta || 0);
+    };
+
+    if (isMobile) {
+      window.addEventListener("deviceorientation", handleOrientation);
+    }
+
+    return () => {
+      if (isMobile) {
+        window.removeEventListener("deviceorientation", handleOrientation);
+      }
+    };
+  }, []);
+
+  return beta;
+}
 
 function Section({
   children,
@@ -30,20 +51,17 @@ function Content() {
   const [scrollY, setScrollY] = useState(0);
   const groupRef = useRef<any>();
   const { size } = useThree();
+  const beta = useDeviceOrientation();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
-  useGesture(
-    {
-      onDeviceOrientation: ({ beta }: { beta: number }) => {
-        if (beta != null) {
-          setScrollY((prevScrollY) => {
-            const newScrollY = prevScrollY + beta * 0.02;
-            return Math.max(0, Math.min(newScrollY, 10)); // Adjusted scrolling range
-          });
-        }
-      },
-    },
-    { eventOptions: { passive: false } }
-  );
+  useEffect(() => {
+    if (isMobile) {
+      setScrollY((prevScrollY) => {
+        const newScrollY = prevScrollY + beta * 0.02;
+        return Math.max(0, Math.min(newScrollY, 10)); // Adjusted scrolling range
+      });
+    }
+  }, [beta]);
 
   useFrame(() => {
     if (groupRef.current) {
@@ -75,7 +93,8 @@ function Content() {
   );
 }
 
-export function TiltScroll() {
+export default function TiltScroll() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   useEffect(() => {
     // Ensure the body and html have 100% height
     document.body.style.height = "100%";
@@ -96,6 +115,23 @@ export function TiltScroll() {
         <pointLight position={[10, 10, 10]} />
         <Content />
       </Canvas>
+      {!isMobile && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            color: "white",
+            textAlign: "center",
+            fontSize: "1.2rem",
+            maxWidth: "80%",
+          }}
+        >
+          This demo is designed for mobile devices with gyroscope support. Please view on a mobile device for the full
+          tilt-scrolling experience.
+        </div>
+      )}
     </div>
   );
 }
